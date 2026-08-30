@@ -1,0 +1,10 @@
+requests>=2.31.0
+python-dotenv>=1.0.0
+pandas>=2.1.0
+shapely>=2.0.0
+openai>=1.0.0
+streamlit>=1.62.0
+fastapi>=0.110.0
+uvicorn>=0.30.0
+httpx>=0.27.0
+pytest>=8.0.0

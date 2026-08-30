@@ -1,0 +1,58 @@
+{
+  "status_code": 200,
+  "result": {
+    "map_data": {
+      "type": "FeatureCollection",
+      "features": [
+        {
+          "type": "Feature",
+          "properties": {
+            "tile_id": "sa_san_antonio_env_params_tile_1",
+            "temperature": 39.2,
+            "exceedance_hours": 6.5,
+            "persistence_hours": 3.0,
+            "risk_score": 85.0
+          },
+          "geometry": {
+            "type": "Polygon",
+            "coordinates": [
+              [
+                [
+                  -98.51,
+                  29.41
+                ],
+                [
+                  -98.47,
+                  29.41
+                ],
+                [
+                  -98.47,
+                  29.45
+                ],
+                [
+                  -98.51,
+                  29.45
+                ],
+                [
+                  -98.51,
+                  29.41
+                ]
+              ]
+            ]
+          }
+        }
+      ]
+    },
+    "stats_data": {
+      "min": 24.0,
+      "max": 68.0,
+      "mean": 45.5,
+      "peak": "68% Humidity"
+    },
+    "locations": [
+      "Downtown San Antonio",
+      "Medical Center",
+      "South Side"
+    ]
+  }
+}
