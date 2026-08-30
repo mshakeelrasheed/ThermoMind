@@ -1,7 +1,6 @@
 import html
 import json
 from pathlib import Path
-import requests
 import pandas as pd
 import streamlit as st
 import pydeck as pdk
@@ -10,8 +9,8 @@ from streamlit_folium import st_folium
 from fpdf import FPDF
 from datetime import datetime
 from samples import SAN_ANTONIO_POINT, SAN_ANTONIO_POLYGON
-
-BACKEND_URL = "http://127.0.0.1:8001"
+from risk_engine import ThermoMindRiskEngine
+from agent import OpenSourceThermoMindAgent
 
 st.set_page_config(
     page_title="ThermoMind | Heat intelligence",
@@ -19,6 +18,7 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded",
 )
+
 CACHE_DIR = Path(__file__).resolve().parent / "thermomind" / "cache"
 DATASETS = {
     "TCM heatmap": "san_antonio_tcm.json",
@@ -171,31 +171,6 @@ st.markdown(
 )
 
 @st.cache_data
-def load_backend_dashboard():
-    try:
-        response = requests.get(f"{BACKEND_URL}/api/dashboard", timeout=10)
-        response.raise_for_status()
-        data = response.json()
-        if data.get("ranked_zones") or data.get("has_results"):
-            return data
-    except Exception:
-        pass
-
-    return {
-        "datasets": {
-            "TCM heatmap": {"status_code": 200, "result": {"map_data": {"features": [{"type": "Feature", "properties": {"tile_id": "sa_demo_tile_1", "temperature": 39.6}, "geometry": {"type": "Polygon", "coordinates": [[[-98.51, 29.41], [-98.47, 29.41], [-98.47, 29.45], [-98.51, 29.45], [-98.51, 29.41]]]}}]}, "stats_data": {"min": 35.0, "max": 41.5}}},
-            "Exceedance": {"status_code": 200, "result": {"stats_data": {"min": 3.0, "max": 12.0}}},
-            "Persistence": {"status_code": 200, "result": {"stats_data": {"min": 2.0, "max": 8.0}}},
-            "Environment": {"status_code": 200, "result": {"stats_data": {"min": 24.0, "max": 32.0}}},
-            "Satellite": {"status_code": 200, "result": {"stats_data": {"min": 0.0, "max": 1.0}}},
-        },
-        "ranked_zones": [{"tile_id": "sa_demo_tile_1", "temperature": 39.6, "exceedance_hours": 9.5, "persistence_hours": 7.5, "risk_score": 94.2, "priority_tier": "🔴 Critical"}],
-        "has_results": True,
-        "feature_count": 1,
-        "source": "frontend_fallback",
-    }
-
-@st.cache_data
 def load_cache(filename: str):
     path = CACHE_DIR / filename
     if not path.exists():
@@ -204,6 +179,32 @@ def load_cache(filename: str):
         return json.loads(path.read_text(encoding="utf-8"))
     except json.JSONDecodeError:
         return None
+
+@st.cache_data
+def load_backend_dashboard():
+    datasets = {}
+    for name, filename in DATASETS.items():
+        data = load_cache(filename)
+        if data:
+            datasets[name] = data
+
+    try:
+        engine = ThermoMindRiskEngine()
+        tcm_data = load_cache("san_antonio_tcm.json")
+        exceed_data = load_cache("san_antonio_exceedance.json")
+        persist_data = load_cache("san_antonio_persistence.json")
+        
+        ranked_zones = engine.rank_zones(tcm_data, exceed_data, persist_data) if (tcm_data and exceed_data and persist_data) else []
+    except Exception:
+        ranked_zones = []
+
+    has_results = bool(ranked_zones or datasets)
+    
+    return {
+        "datasets": datasets,
+        "ranked_zones": ranked_zones,
+        "has_results": has_results,
+    }
 
 def result_part(payload):
     if not isinstance(payload, dict):
@@ -238,13 +239,6 @@ def feature_point(feature):
     if geometry.get("type") == "Polygon" and coordinates and coordinates[0]:
         ring = coordinates[0]
         return sum(point[1] for point in ring) / len(ring), sum(point[0] for point in ring) / len(ring)
-    return None
-
-def activity_id(payload):
-    if isinstance(payload, dict):
-        data = payload.get("data", {})
-        if isinstance(data, dict) and data.get("activity_id"):
-            return data["activity_id"]
     return None
 
 def generate_pdf_report(messages):
@@ -352,7 +346,6 @@ def render_answer_box(answer: str):
     st.markdown(formatted_text)
     st.markdown("</div>", unsafe_allow_html=True)
 
-
 def render_chat(datasets, ranked_zones, has_results):
     st.markdown(
         """
@@ -391,14 +384,13 @@ def render_chat(datasets, ranked_zones, has_results):
         
         with st.spinner("Reviewing FortyGuard evidence..."):
             try:
-                response = requests.post(
-                    f"{BACKEND_URL}/api/ask",
-                    json={"question": user_query, "history": st.session_state.messages[:-1]},
-                    timeout=30,
+                agent = OpenSourceThermoMindAgent()
+                context_str = f"San Antonio urban heat telemetry loaded. Top zones available for analysis: {ranked_zones[:3]}"
+                answer = agent.answer_question(
+                    question=user_query,
+                    data_context=context_str,
+                    history=st.session_state.messages[:-1]
                 )
-                response.raise_for_status()
-                payload = response.json()
-                answer = payload.get("answer") or "- The dashboard has no usable answer right now.\n- Check the data layer and retry once the ranking is complete."
             except Exception as exc:
                 answer = (
                     "- I cannot reach the reasoning model right now.\n"
@@ -414,9 +406,7 @@ datasets = dashboard.get("datasets", {})
 ranked_zones = dashboard.get("ranked_zones", [])
 has_results = dashboard.get("has_results", False)
 tcm_features = find_features(datasets.get("TCM heatmap"))
-
-# Fallback feature count sync if other layers returned single/empty features
-tcm_count = len(tcm_features)
+tcm_count = len(tcm_features) if tcm_features else 1
 
 with st.sidebar:
     st.markdown("<div class='eyebrow' style='color:#b9e7c5; margin-top:0.2rem;'>ThermoMind / Control room</div>", unsafe_allow_html=True)
@@ -427,16 +417,11 @@ with st.sidebar:
     st.markdown(f"<span class='status {'ready' if has_results else 'error'}' style='margin-top:0.1rem; margin-bottom:0.3rem;'>{'READY' if has_results else 'OFFLINE'}</span>", unsafe_allow_html=True)
     if st.button("Refresh data", use_container_width=True):
         st.cache_data.clear()
-        try:
-            response = requests.get(f"{BACKEND_URL}/api/dashboard", timeout=10)
-            if response.ok:
-                st.session_state["dashboard_payload"] = response.json()
-        except Exception:
-            pass
         st.rerun()
     st.divider()
     st.markdown("**Analysis layers**")
-    for name, payload in datasets.items():
+    for name in DATASETS.keys():
+        payload = datasets.get(name)
         marker = "●" if payload else "○"
         st.caption(f"{marker} {name}")
         
@@ -496,12 +481,10 @@ with overview:
     center_lat = SAN_ANTONIO_POINT["latitude"]
     center_lon = SAN_ANTONIO_POINT["longitude"]
 
-    # Render satellite view using robust Folium raster imagery tiles
     if map_style_choice == "Satellite":
         st.caption("🛰️ Satellite imagery view active.")
         m = folium.Map(location=[center_lat, center_lon], zoom_start=12, tiles=None)
         
-        # Add high-reliability Esri World Imagery tiles
         folium.TileLayer(
             tiles="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
             attr="Esri World Imagery",
@@ -511,8 +494,7 @@ with overview:
             max_zoom=19
         ).add_to(m)
         
-        # Add hotspot markers over the satellite imagery
-        for row in map_rows[:50]:  # render top 50 sample points for performance
+        for row in map_rows[:50]:
             folium.CircleMarker(
                 location=[row["lat"], row["lon"]],
                 radius=8,
@@ -578,13 +560,12 @@ render_chat(datasets, ranked_zones, has_results)
 
 st.markdown("### FortyGuard Telemetry & Forecast Layers (12h Horizon)")
 layer_cols = st.columns(5)
-for column, (name, payload) in zip(layer_cols, datasets.items()):
+for column, (name, payload) in zip(layer_cols, DATASETS.items()):
     with column:
         part = result_part(payload) if payload else {}
         stats = part.get("stats_data", {}) if isinstance(part, dict) else {}
         feature_list = find_features(payload)
         
-        # Fallback count alignment for cards if single/fallback features are loaded
         display_count = len(feature_list) if len(feature_list) > 1 else tcm_count
         peak_val = stats.get('max', stats.get('peak', '41.5 °C'))
         
@@ -601,7 +582,6 @@ for column, (name, payload) in zip(layer_cols, datasets.items()):
 
 st.divider()
 
-# Authors & Co-Authors Section
 st.markdown(
     """
     <div style='text-align: center; padding: 10px 0 5px 0;'>
