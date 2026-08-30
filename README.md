@@ -697,17 +697,14 @@ Potential future development includes:
 
 ---
 
-# 👨‍💻 Team
+# 👨‍💻 Authors & Contributors
 
 ## Muhammad Shakeel Rasheed
-
-**Lead Developer & AI Engineer**
-
-BS Artificial Intelligence
-The Islamia University Bahawalpur
-
-GitHub: [@mshakeelrasheed](https://github.com/mshakeelrasheed)
-
+- **Lead Developer & AI Engineer**
+- **Affiliation:** BS Artificial Intelligence, The Islamia University Bahawalpur
+- **GitHub:** [@mshakeelrasheed](https://github.com/mshakeelrasheed)
+- **LinkedIn:** [muhammad-shakeel-rasheed](https://www.linkedin.com/in/muhammad-shakeel-rasheed)
+- **Hugging Face:** [@mshakeelrasheed](https://huggingface.co/mshakeelrasheed)
 ---
 
 ## Hamza Shoaib
