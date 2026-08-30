@@ -17,7 +17,7 @@
 
 ### 🚀 Live Demo
 
-**[Launch ThermoMind](https://thermomind.streamlit.app)**
+**[Launch ThermoMind](https://thermomind-ai.streamlit.app/)**
 
 </div>
 
@@ -407,25 +407,6 @@ ThermoMind processes the returned telemetry before passing relevant metrics into
                    └──────────────────┘
 ```
 
----
-
-# 📸 Dashboard Preview
-
-<p align="center">
-  <img src="screenshots/dashboard.png" width="900">
-</p>
-
----
-
-# 🚀 Live Demo
-
-### [Launch ThermoMind](https://thermomind.streamlit.app)
-
-The live application demonstrates the ThermoMind workflow using San Antonio, Texas.
-
-> **Note:** The application may use cached telemetry to provide fast and reliable dashboard interaction and to reduce repeated API requests.
-
----
 
 # 🛠️ Technology Stack
 
@@ -735,7 +716,7 @@ GitHub: [@mshakeelrasheed](https://github.com/mshakeelrasheed)
 
 AI & Infrastructure Collaborator
 
-GitHub: [@hamzxshoaib](https://github.com/hamzxshoaib)
+GitHub: [@hamzxshoaib](https://github.com/hamxashoaib)
 
 ---
 
