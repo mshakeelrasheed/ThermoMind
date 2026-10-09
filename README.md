@@ -697,7 +697,7 @@ Potential future development includes:
 
 ---
 
-# 👨‍💻 Authors & Contributors
+# 👨‍💻  Contributors
 
 ## Muhammad Shakeel Rasheed
 - **Lead Developer & AI Engineer**
@@ -709,7 +709,7 @@ Potential future development includes:
 
 ## Hamza Shoaib
 
-**Co-Author & Systems Architect**
+**Systems Architect**
 
 AI & Infrastructure Collaborator
 
