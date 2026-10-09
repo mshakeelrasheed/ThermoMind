@@ -593,4 +593,5 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+
 st.caption("ThermoMind uses FortyGuard telemetry for analysis. Confirm project feasibility with local building, equity, maintenance, and public-health data before implementation.")
