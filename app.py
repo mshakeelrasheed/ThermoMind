@@ -580,18 +580,5 @@ for column, (name, payload) in zip(layer_cols, DATASETS.items()):
             unsafe_allow_html=True,
         )
 
-st.divider()
-
-st.markdown(
-    """
-    <div style='text-align: center; padding: 10px 0 5px 0;'>
-        <p style='font-size: 0.9rem; font-weight: 600; color: #66737d; margin: 0;'>
-            <strong>Author:</strong> <span style='color: #155b78;'>Muhammad Shakeel</span> &nbsp;&nbsp;|&nbsp;&nbsp; <strong>Co-Author:</strong> <span style='color: #155b78;'>Hamza Shoaib</span>
-        </p>
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
-
 
 st.caption("ThermoMind uses FortyGuard telemetry for analysis. Confirm project feasibility with local building, equity, maintenance, and public-health data before implementation.")
